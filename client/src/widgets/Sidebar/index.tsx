@@ -61,9 +61,9 @@ const Sidebar = (props: Props) => {
     },
     { type: 'divider' },
     {
-      key: extUrl,
+      key: extUrl as string,
       icon: <DesktopOutlined />,
-      label: <Link href={extUrl} target="_blank">На сайт →</Link>,
+      label: <Link href={extUrl as string} target="_blank">На сайт →</Link>,
       onClick: collapseSidebarOnMobileDevices,
     },
   ];
