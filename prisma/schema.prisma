@@ -94,3 +94,13 @@ model CryptoActivity {
   deleted      Boolean   @default(false)
   views        Int       @default(0)
 }
+
+model CryptoCurrency {
+  id          String   @id @default(uuid())
+  name        String
+  short_name  String   @unique
+  price       String
+  day_percent String
+  is_positive Boolean
+  created_at  DateTime @default(now())
+}
