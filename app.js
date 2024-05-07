@@ -14,6 +14,7 @@ import newsCategoryRouter from './routes/news-categories.js';
 import uploadRouter from './routes/uploads.js';
 import newsPostsRouter from './routes/news-posts.js';
 import cryptoActivitiesRouter from './routes/crypto-activities.js';
+import cryptoCurrenciesRouter from './routes/crypto-currencies.js';
 
 const app = express();
 
@@ -48,5 +49,7 @@ app.use('/api/promo-banners', promoBannerRouter);
 app.use('/api/news-categories', newsCategoryRouter);
 app.use('/api/news-posts', newsPostsRouter);
 app.use('/api/crypto-activities', cryptoActivitiesRouter);
+
+app.use('/api/crypto-currencies', cryptoCurrenciesRouter);
 
 export default app;
