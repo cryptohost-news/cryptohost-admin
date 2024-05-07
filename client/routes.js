@@ -1,8 +1,8 @@
 import 'dotenv/config';
 
 export const baseUrl = process.env.SERVER_URL;
-export const clientDomain = process.env.CLIENT_DOMAIN;
-export const extUrl = 'https://cryptohost.vercel.app'; // TODO поменять URL
+export const clientDomain = process.env.SERVER_URL;
+export const extUrl = process.env.CLIENT_DOMAIN; // TODO поменять URL
 
 const apiPath = 'api';
 
