@@ -23,6 +23,8 @@ jobs:
           script: |
             cd cryptohost_backend && \
             git pull && \
+            npm i && \
             cd client && \
+            npm i && \
             npm run build && \
             pm2 restart all
