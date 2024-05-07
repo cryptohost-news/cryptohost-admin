@@ -26,6 +26,12 @@ const corsOptions = {
 // вызываем корс как мидлвару
 app.use(cors(corsOptions));
 
+// Добавляем заголовок Content-Security-Policy
+app.use((req, res, next) => {
+  res.setHeader('Content-Security-Policy', "default-src 'self' blob:;");
+  next();
+});
+
 // если запрос придет на uploads, то нужно взять функцию statiс из библиотеки express и проверить есть ли в этой папке то, что я передаю
 app.use('/uploads', express.static('uploads'));
 
