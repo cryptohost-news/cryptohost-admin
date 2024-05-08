@@ -21,7 +21,7 @@ const app = express();
 app.use(logger('dev'));
 
 const corsOptions = {
-  origin: ['http://localhost:3000', 'http://192.168.1.56:3000', 'https://crypto-host.net'],
+  origin: ['http://localhost:3000', 'http://192.168.1.56:3000', 'https://admin.crypto-host.net'],
   credentials: true // Разрешить передачу куки и заголовков авторизации
 };
 // вызываем корс как мидлвару
