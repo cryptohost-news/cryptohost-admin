@@ -31,10 +31,20 @@ const storage = multer.diskStorage({
     // Генерируем уникальное имя файла с помощью uuid
     const uniqueFileName = `${uuidv4()}.${file.originalname.split('.').pop()}`;
     cb(null, uniqueFileName);
-  },
+  }
 });
 
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/heif', 'image/heic'];
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Неподдерживаемый MIME type'));
+    }
+  }
+});
 
 const router = express.Router();
 
