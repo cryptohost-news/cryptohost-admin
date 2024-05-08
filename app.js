@@ -20,16 +20,19 @@ const app = express();
 
 app.use(logger('dev'));
 
+const origin = process.env.NODE_ENV === 'dev'
+  ? ['http://localhost:3000', 'http://192.168.1.56:3000']
+  : ['https://admin.crypto-host.net', 'https://crypto-host.net'];
+
 const corsOptions = {
-  origin: ['http://localhost:3000', 'http://192.168.1.56:3000', 'https://admin.crypto-host.net'],
-  credentials: true // Разрешить передачу куки и заголовков авторизации
+  origin, credentials: true // Разрешить передачу куки и заголовков авторизации
 };
 // вызываем корс как мидлвару
 app.use(cors(corsOptions));
 
 // Добавляем заголовок Content-Security-Policy
 app.use((req, res, next) => {
-  res.setHeader('Content-Security-Policy', "default-src 'self' blob:;");
+  res.setHeader('Content-Security-Policy', 'default-src \'self\' blob:;');
   next();
 });
 
