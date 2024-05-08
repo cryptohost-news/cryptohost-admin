@@ -20,6 +20,7 @@ const app = express();
 
 app.use(logger('dev'));
 
+// Определяем откуда можно слать запросы, чтобы cors не ругался. Зависит от переменной окружение, в которой находится режим разработки
 const origin = process.env.NODE_ENV === 'dev'
   ? ['http://localhost:3000', 'http://192.168.1.56:3000']
   : ['https://admin.crypto-host.net', 'https://crypto-host.net'];
