@@ -21,13 +21,22 @@ const app = express();
 app.use(logger('dev'));
 
 // Определяем откуда можно слать запросы, чтобы cors не ругался. Зависит от переменной окружение, в которой находится режим разработки
-const origin = process.env.NODE_ENV === 'dev'
+/*const origin = process.env.NODE_ENV === 'dev'
   ? ['http://localhost:3000', 'http://192.168.1.56:3000']
-  : ['https://admin.crypto-host.net', 'https://crypto-host.net'];
+  : ['https://admin.crypto-host.net', 'https://crypto-host.net'];*/
 
 const corsOptions = {
-  origin, credentials: true // Разрешить передачу куки и заголовков авторизации
+  credentials: true
 };
+
+if (process.env.NODE_ENV !== 'dev') {
+  corsOptions.origin = ['https://admin.crypto-host.net', 'https://crypto-host.net'];
+}
+// const corsOptions = {
+//   // origin,
+//   credentials: true // Разрешить передачу куки и заголовков авторизации
+// };
+
 // вызываем корс как мидлвару
 app.use(cors(corsOptions));
 

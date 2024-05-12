@@ -10,55 +10,29 @@ import sharp from 'sharp';
  */
 export const uploadImage = async (req, res) => {
   try {
-    // // Получаем требуемую ширину изображения из запроса клиента
-    // const { imageWidth, thumbWidth } = req.query;
-    // const desiredImageWidth = imageWidth ? parseInt(imageWidth) : 800;
-    // const desiredThumbWidth = thumbWidth ? parseInt(thumbWidth) : 400;
-    //
-    // // Формируем пути для сохранения изображений
-    // const imagePath = `${req.file.destination}/${req.file.filename}`;
-    // const thumbnailPath = `${req.file.destination}/${
-    //   req.file.filename.split('.')[0]
-    // }-thumb.${req.file.filename.split('.').pop()}`;
-    //
-    // // Открываем изображение с помощью Jimp
-    // const image = await Jimp.read(imagePath);
-    //
-    // // Сжимаем изображение с заданным качеством (от 0 до 100)
-    // await image.quality(60); // Примерно 80% качества
-    //
-    // // Изменяем размер изображения по ширине с сохранением пропорций
-    // await image.resize(desiredImageWidth, Jimp.AUTO);
-    //
-    // // Сохраняем измененное изображение
-    // await image.writeAsync(imagePath);
-    //
-    // // Создаем миниатюру изображения с шириной 600 пикселей
-    // // const thumbnail = image.clone(); // Клонируем изображение для миниатюры
-    // // await thumbnail.resize(desiredThumbWidth, Jimp.AUTO); // Изменяем размер для миниатюры
-    // // await thumbnail.writeAsync(thumbnailPath); // Сохраняем миниатюру
-    //
-    // // Отправляем URL в ответе
-    // // res.status(201).json({ imageUrl: imagePath, thumbnailUrl: thumbnailPath });
-    // res.status(201).json({ imageUrl: imagePath });
-
-    // Получаем требуемую ширину изображения из запроса клиента
-    const { imageWidth, thumbWidth } = req.query;
+    const { imageWidth, pixelized = true } = req.query;
     const desiredImageWidth = imageWidth ? parseInt(imageWidth) : 800;
-    const desiredThumbWidth = thumbWidth ? parseInt(thumbWidth) : 400;
+
+    const desiredImageWidths = {
+      'sm': 400,
+      'md': 800,
+      'lg': 1200
+    };
+    const desiredPixelSizes = {
+      'sm': [3, 4],
+      'md': [6, 7],
+      'lg': [10, 11]
+    };
 
     // Формируем пути для сохранения изображений
     const imagePath = `${req.file.destination}/${req.file.filename}`;
-    const thumbnailPath = `${req.file.destination}/${
-      req.file.filename.split('.')[0]
-    }-thumb.${req.file.filename.split('.').pop()}`;
 
     // Создаем временный файл для конвертации
     const tempImagePath = `${req.file.destination}/${req.file.filename}-temp.jpg`;
 
     // Сконвертируем изображение в JPEG с помощью sharp
     await sharp(req.file.path)
-      .jpeg({ quality: 60 })
+      .jpeg()// убрал настройку качества
       .toFile(tempImagePath);
 
     // Закрываем изображение с помощью sharp
@@ -68,31 +42,63 @@ export const uploadImage = async (req, res) => {
     // Удаляем исходное изображение
     fs.unlinkSync(req.file.path);
 
-    // Открываем временное изображение с помощью Jimp
-    const image = await Jimp.read(tempImagePath);
+    if (pixelized === true) {
+      const imageParams = Object.entries(desiredImageWidths);
 
-    await image.quality(50);
+      for (const imageParam of imageParams) {
+        const [imageSize, imageWidth] = imageParam;
+        // Создаем временное изображение с помощью Jimp
+        const image = await Jimp.read(tempImagePath);
+        await image.quality(50);
 
-    // Изменяем размер изображения по ширине с сохранением пропорций
-    await image.resize(desiredImageWidth, Jimp.AUTO);
+        await image.resize(imageWidth, Jimp.AUTO);
 
-    // Сохраняем измененное изображение
-    await image.writeAsync(imagePath);
+        const pixelSizes = desiredPixelSizes[imageSize];
 
-    // Удаляем временное изображение
-    fs.unlinkSync(tempImagePath);
+        for (let i = 0; i < pixelSizes.length; i += 1) {
+          const pixelSize = pixelSizes[i];
 
-    // Создаем миниатюру изображения с шириной 600 пикселей
-    // const thumbnail = image.clone(); // Клонируем изображение для миниатюры
-    // await thumbnail.resize(desiredThumbWidth, Jimp.AUTO); // Изменяем размер для миниатюры
-    // await thumbnail.writeAsync(thumbnailPath); // Сохраняем миниатюру
+          for (let y = 0; y < image.bitmap.height; y += pixelSize) {
+            for (let x = 0; x < image.bitmap.width; x += pixelSize) {
+              const color = image.getPixelColor(x, y); // Получаем цвет пикселя
+              for (let dy = 0; dy < pixelSize; dy++) {
+                for (let dx = 0; dx < pixelSize; dx++) {
+                  // Устанавливаем цвет для каждого пикселя в блоке
+                  image.setPixelColor(color, x + dx, y + dy);
+                }
+              }
+            }
+          }
 
-    // Отправляем URL в ответе
-    // res.status(201).json({ imageUrl: imagePath, thumbnailUrl: thumbnailPath });
-    res.status(201).json({ imageUrl: imagePath });
+          const firstOutputImagePath = `${req.file.destination}/${
+            req.file.filename.split('.')[0]
+          }-${imageSize}-${i % 2}.${req.file.filename.split('.').pop()}`;
+
+          // Сохраняем измененное изображение
+          await image.writeAsync(firstOutputImagePath);
+        }
+      }
+
+      // Создаем временное изображение с помощью Jimp
+      const image = await Jimp.read(tempImagePath);
+      await image.quality(50);
+
+      // Изменяем размер изображения по ширине с сохранением пропорций
+      await image.resize(desiredImageWidth, Jimp.AUTO);
+
+      // Сохраняем измененное изображение
+      await image.writeAsync(imagePath);
+
+      // Удаляем временное изображение
+      fs.unlinkSync(tempImagePath);
+
+      res.status(201).json({ imageUrl: imagePath });
+    }
+
   } catch (error) {
     return res.status(500).json({
-      message: `Ошибка при загрузке изображения: ${error}`,
+      message: `Ошибка при загрузке изображения: ${error}`
     });
   }
 };
+
