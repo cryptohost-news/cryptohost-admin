@@ -10,18 +10,18 @@ import sharp from 'sharp';
  */
 export const uploadImage = async (req, res) => {
   try {
-    const { imageWidth, pixelized = true } = req.query;
+    const { imageWidth, pixelized = false } = req.query;
     const desiredImageWidth = imageWidth ? parseInt(imageWidth) : 800;
 
     const desiredImageWidths = {
-      'sm': 400,
-      'md': 800,
-      'lg': 1200
+      sm: 400,
+      md: 800,
+      lg: 1200
     };
     const desiredPixelSizes = {
-      'sm': [3, 4],
-      'md': [6, 7],
-      'lg': [10, 11]
+      sm: [3, 4],
+      md: [6, 7],
+      lg: [10, 11]
     };
 
     // Формируем пути для сохранения изображений
@@ -70,12 +70,12 @@ export const uploadImage = async (req, res) => {
             }
           }
 
-          const firstOutputImagePath = `${req.file.destination}/${
+          const outputImagePath = `${req.file.destination}/${
             req.file.filename.split('.')[0]
           }-${imageSize}-${i % 2}.${req.file.filename.split('.').pop()}`;
 
           // Сохраняем измененное изображение
-          await image.writeAsync(firstOutputImagePath);
+          await image.writeAsync(outputImagePath);
         }
       }
 

@@ -4,6 +4,7 @@ import { slugify } from 'transliteration';
 import deleteCoverImg from '../utils/delete-cover-img.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { moveCoverImg } from '../utils/move-cover-img.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -196,6 +197,10 @@ export const create = async (req, res) => {
       },
     });*/
 
+    const tempImagePath = data.image;
+    const permanentImagePath = tempImagePath.replace('temp/', '')
+    moveCoverImg(tempImagePath, permanentImagePath);
+
     // Затем создаем новый баннер, который будет активным
     const promoBanner = await prisma.promoBanner.create({
       data: {
@@ -204,7 +209,7 @@ export const create = async (req, res) => {
         meta_title: data.metaTitle || data.title,
         title: data.title,
         description: data.description,
-        image: data.image,
+        image: permanentImagePath,
         url: data.url || null,
       },
     });
@@ -230,6 +235,27 @@ export const update = async (req, res) => {
     const data = req.body;
     const { id } = data;
 
+    // Получение текущей категории новости
+    const currentPromoBanner = await prisma.promoBanner.findUnique({
+      where: {
+        id
+      }
+    });
+
+    let newImagePath = data.path;
+
+    if (currentPromoBanner.image !== data.image) {
+      const tempImagePath = data.image;
+      const permanentImagePath = tempImagePath.replace('temp/', '');
+      newImagePath = permanentImagePath;
+      moveCoverImg(tempImagePath, permanentImagePath);
+
+      // удаляем текущую обложку
+      // const currentImagePath = path.join(__dirname, '..', currentNewsPost.image);
+      // console.log('imagePathimagePathimagePathimagePath', currentImagePath)
+      // deleteCoverImg(currentImagePath);
+    }
+
     await prisma.promoBanner.update({
       where: {
         id,
@@ -239,7 +265,7 @@ export const update = async (req, res) => {
         meta_title: data.metaTitle || data.title,
         title: data.title,
         description: data.description,
-        image: data.image,
+        image: newImagePath,
         url: data.url || null,
         updated: true,
         updated_at: new Date(),

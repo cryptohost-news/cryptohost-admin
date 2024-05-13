@@ -18,7 +18,7 @@ const storage = multer.diskStorage({
     const month = (currentDate.getMonth() + 1).toString().padStart(2, '0'); // Добавляем ноль спереди, если месяц состоит из одной цифры
     const formattedDate = `${year}-${month}`;
 
-    const uploadPath = `uploads/${entityFolder}/${formattedDate}`;
+    const uploadPath = `uploads/temp/${entityFolder}/${formattedDate}`;
 
     // Проверяем, существует ли папка для данного типа сущности
     if (!fs.existsSync(uploadPath)) {

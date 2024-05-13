@@ -5,6 +5,7 @@ import deleteCoverImg from '../utils/delete-cover-img.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import getPreviewFromBody from '../utils/get-preview-from-body.js';
+import { moveCoverImg } from '../utils/move-cover-img.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -19,21 +20,21 @@ export const getPaths = async (req, res) => {
   try {
     const newsPosts = await prisma.newsPost.findMany({
       select: {
-        slug: true,
-      },
+        slug: true
+      }
     });
 
     // Преобразуем полученные слаги в массив объектов с параметром slug для каждого пути
     const paths = newsPosts.map((post) => ({
       params: {
-        slug: post.slug,
-      },
+        slug: post.slug
+      }
     }));
 
     return res.status(200).json(paths);
   } catch (error) {
     return res.status(400).json({
-      message: `Не удалось получить пути новостей: ${error}`,
+      message: `Не удалось получить пути новостей: ${error}`
     });
   } finally {
     await prisma.$disconnect();
@@ -55,14 +56,14 @@ export const getAll = async (req, res) => {
       excludeIds = '[]',
       searchQuery = '', // 1. Добавление параметра поиска по заголовку
       sortField = 'published_at', // Поле сортировки по умолчанию
-      sortOrder = 'desc', // Направление сортировки по умолчанию
+      sortOrder = 'desc' // Направление сортировки по умолчанию
     } = req.query;
 
     const pageSizeInt = parseInt(pageSize, 10);
     const skip = (page - 1) * pageSizeInt;
 
     const where = {
-      deleted: false,
+      deleted: false
     };
 
     // Делаем это для того, чтобы total не реагировал исключенные посты
@@ -71,10 +72,10 @@ export const getAll = async (req, res) => {
     // Добавляем фильтрацию по категориям, если categoryIds указаны
     if (JSON.parse(categoryIds).length > 0) {
       where.category_id = {
-        in: JSON.parse(categoryIds),
+        in: JSON.parse(categoryIds)
       };
       totalCountWhere.category_id = {
-        in: JSON.parse(categoryIds),
+        in: JSON.parse(categoryIds)
       };
     }
 
@@ -82,23 +83,23 @@ export const getAll = async (req, res) => {
     if (JSON.parse(excludeIds).length > 0) {
       where.NOT = {
         id: {
-          in: JSON.parse(excludeIds),
-        },
+          in: JSON.parse(excludeIds)
+        }
       };
     }
     // Добавляем поиск по заголовку
     if (searchQuery) {
       where.title = {
-        contains: searchQuery,
+        contains: searchQuery
         // mode: 'insensitive', // Регистронезависимый поиск
       };
       totalCountWhere.title = {
-        contains: searchQuery,
+        contains: searchQuery
       };
     }
 
     const totalCount = await prisma.newsPost.count({
-      where: totalCountWhere,
+      where: totalCountWhere
     });
 
     const newsPosts = await prisma.newsPost.findMany({
@@ -106,7 +107,7 @@ export const getAll = async (req, res) => {
       skip,
       take: pageSizeInt,
       orderBy: {
-        [sortField]: sortOrder, // 2. Добавление сортировки по выбранному полю и направлению
+        [sortField]: sortOrder // 2. Добавление сортировки по выбранному полю и направлению
       },
       /*      include: {
               category: true,
@@ -123,8 +124,8 @@ export const getAll = async (req, res) => {
         slug: true,
         body: true,
         views: true,
-        category: true,
-      },
+        category: true
+      }
     });
 
     // Проход по каждой статье и создание поля description
@@ -136,11 +137,11 @@ export const getAll = async (req, res) => {
 
     res.status(200).json({
       posts: newsPosts,
-      total: totalCount,
+      total: totalCount
     });
   } catch (error) {
     return res.status(400).json({
-      message: `Не удалось получить новости: ${error}`,
+      message: `Не удалось получить новости: ${error}`
     });
   } finally {
     await prisma.$disconnect();
@@ -164,20 +165,20 @@ export const getOne = async (req, res) => {
     if (id) {
       newsPost = await prisma.newsPost.findUnique({
         where: {
-          id,
+          id
         },
         include: {
-          category: true,
-        },
+          category: true
+        }
       });
     } else if (slug) {
       newsPost = await prisma.newsPost.findUnique({
         where: {
-          slug,
+          slug
         },
         include: {
-          category: true,
-        },
+          category: true
+        }
       });
     }
 
@@ -207,18 +208,18 @@ export const getOne = async (req, res) => {
         where: { id },
         data: {
           views: {
-            increment: 1,
-          },
-        },
+            increment: 1
+          }
+        }
       });
     } else if (slug) {
       await prisma.newsPost.update({
         where: { slug },
         data: {
           views: {
-            increment: 1,
-          },
-        },
+            increment: 1
+          }
+        }
       });
     }
 
@@ -227,7 +228,7 @@ export const getOne = async (req, res) => {
     return res.status(200).json(newsPost);
   } catch (error) {
     return res.status(500).json({
-      message: `Не удалось получить новость: ${error}`,
+      message: `Не удалось получить новость: ${error}`
     });
   } finally {
     await prisma.$disconnect();
@@ -246,13 +247,17 @@ export const create = async (req, res) => {
     // publishedAt по умолчанию ставится текущая дата, но если изменено, то указанная дата
     // const { metaTitle, title, categoryId, publishedAt, image, body } = data;
 
+    const tempImagePath = data.image;
+    const permanentImagePath = tempImagePath.replace('temp/', '')
+    moveCoverImg(tempImagePath, permanentImagePath);
+
     let currentSlug = slugify(data.title);
 
     const createdNewsPost = await prisma.newsPost.findFirst({
       where: {
         slug: currentSlug,
-        deleted: false,
-      },
+        deleted: false
+      }
     });
 
     if (createdNewsPost) {
@@ -264,7 +269,7 @@ export const create = async (req, res) => {
       include: {
         // нужно загрузить связанную категорию, которая указана в модели:
         // category     NewsCategory @relation(fields: [category_id], references: [id])
-        category: true,
+        category: true
       },
       data: {
         meta_title: data.metaTitle || data.title,
@@ -275,28 +280,28 @@ export const create = async (req, res) => {
         published_at: data.publishedAt
           ? new Date(data.publishedAt)
           : new Date(),
-        image: data.image,
+        image: permanentImagePath,
         slug: currentSlug,
-        body: data.body,
-      },
+        body: data.body
+      }
     });
 
     // Увеличение счетчика в соответствующей категории
     await prisma.newsCategory.update({
       where: {
-        id: data.categoryId,
+        id: data.categoryId
       },
       data: {
         posts_count: {
-          increment: 1,
-        },
-      },
+          increment: 1
+        }
+      }
     });
 
     return res.status(201).json(newsPost);
   } catch (error) {
     return res.status(500).json({
-      message: `Не удалось добавить новость: ${error}`,
+      message: `Не удалось добавить новость: ${error}`
     });
   } finally {
     await prisma.$disconnect();
@@ -319,8 +324,8 @@ export const update = async (req, res) => {
     const newsPostWithSameSlug = await prisma.newsPost.findFirst({
       where: {
         slug: currentSlug,
-        deleted: false,
-      },
+        deleted: false
+      }
     });
 
     if (newsPostWithSameSlug && newsPostWithSameSlug.id !== id) {
@@ -331,64 +336,79 @@ export const update = async (req, res) => {
     // Получение текущей категории новости
     const currentNewsPost = await prisma.newsPost.findUnique({
       where: {
-        id,
+        id
       },
       select: {
-        category_id: true,
-      },
+        category_id: true
+      }
     });
+
+    let newImagePath = data.path;
+
+    if (currentNewsPost.image !== data.image) {
+      const tempImagePath = data.image;
+      const permanentImagePath = tempImagePath.replace('temp/', '');
+      newImagePath = permanentImagePath;
+      moveCoverImg(tempImagePath, permanentImagePath);
+
+      // удаляем текущую обложку
+      // const currentImagePath = path.join(__dirname, '..', currentNewsPost.image);
+      // console.log('imagePathimagePathimagePathimagePath', currentImagePath)
+      // deleteCoverImg(currentImagePath);
+    }
+
 
     // Если категория изменена, увеличение счетчика в новой категории
     if (currentNewsPost.category_id !== newCategoryId) {
       await prisma.newsCategory.update({
         where: {
-          id: newCategoryId,
+          id: newCategoryId
         },
         data: {
           posts_count: {
-            increment: 1,
-          },
-        },
+            increment: 1
+          }
+        }
       });
 
       // Уменьшение счетчика в текущей категории
       await prisma.newsCategory.update({
         where: {
-          id: currentNewsPost.category_id,
+          id: currentNewsPost.category_id
         },
         data: {
           posts_count: {
-            decrement: 1,
-          },
-        },
+            decrement: 1
+          }
+        }
       });
     }
 
     await prisma.newsPost.update({
       where: {
         id,
-        deleted: false,
+        deleted: false
       },
       data: {
         meta_title: data.metaTitle || data.title,
         title: data.title,
         published_at: data.publishedAt,
         category_id: data.categoryId,
-        image: data.image,
+        image: newImagePath,
         slug: currentSlug,
         body: data.body,
         updated: true,
         updated_at: new Date(),
-        updated_by: req.admin.id,
-      },
+        updated_by: req.admin.id
+      }
     });
 
     return res.status(200).json({
-      message: 'Новость успешно обновлена',
+      message: 'Новость успешно обновлена'
     });
   } catch (error) {
     return res.status(500).json({
-      message: `Не удалось отредактировать новость: ${error}`,
+      message: `Не удалось отредактировать новость: ${error}`
     });
   } finally {
     await prisma.$disconnect();
@@ -409,56 +429,56 @@ export const softRemove = async (req, res) => {
     const newsPost = await prisma.newsPost.findUnique({
       where: {
         id,
-        deleted: false,
-      },
+        deleted: false
+      }
     });
 
     if (!newsPost) {
       return res.status(404).json({
-        message: 'Новость не найдена',
+        message: 'Новость не найдена'
       });
     }
 
     // Получение категории текущей новости
     const currentNewsPost = await prisma.newsPost.findUnique({
       where: {
-        id,
+        id
       },
       select: {
-        category_id: true,
-      },
+        category_id: true
+      }
     });
 
     // Уменьшение счетчика в текущей категории
     await prisma.newsCategory.update({
       where: {
-        id: currentNewsPost.category_id,
+        id: currentNewsPost.category_id
       },
       data: {
         posts_count: {
-          decrement: 1,
-        },
-      },
+          decrement: 1
+        }
+      }
     });
 
     await prisma.newsPost.update({
       where: {
-        id,
+        id
       },
       data: {
         deleted: true,
         updated: true,
         updated_at: new Date(),
-        updated_by: req.admin.id,
-      },
+        updated_by: req.admin.id
+      }
     });
 
     return res.status(200).json({
-      message: 'Новость успешно удалена',
+      message: 'Новость успешно удалена'
     });
   } catch (error) {
     return res.status(500).json({
-      message: `Не удалось удалить новость: ${error}`,
+      message: `Не удалось удалить новость: ${error}`
     });
   } finally {
     await prisma.$disconnect();
@@ -478,13 +498,13 @@ export const hardRemove = async (req, res) => {
     // Получаем информацию о новости
     const newsPost = await prisma.newsPost.findUnique({
       where: {
-        id,
-      },
+        id
+      }
     });
 
     if (!newsPost) {
       return res.status(404).json({
-        message: 'Новость не найдена',
+        message: 'Новость не найдена'
       });
     }
 
@@ -501,37 +521,37 @@ export const hardRemove = async (req, res) => {
     // Получение категории текущей новости
     const currentNewsPost = await prisma.newsPost.findUnique({
       where: {
-        id,
+        id
       },
       select: {
-        category_id: true,
-      },
+        category_id: true
+      }
     });
 
     // Уменьшение счетчика в текущей категории
     await prisma.newsCategory.update({
       where: {
-        id: currentNewsPost.category_id,
+        id: currentNewsPost.category_id
       },
       data: {
         posts_count: {
-          decrement: 1,
-        },
-      },
+          decrement: 1
+        }
+      }
     });
 
     await prisma.newsPost.delete({
       where: {
-        id,
-      },
+        id
+      }
     });
 
     return res.status(200).json({
-      message: 'Новость успешно удалена безвозвратно',
+      message: 'Новость успешно удалена безвозвратно'
     });
   } catch (error) {
     return res.status(500).json({
-      message: `Не удалось безвозвратно удалить новость: ${error}`,
+      message: `Не удалось безвозвратно удалить новость: ${error}`
     });
   } finally {
     await prisma.$disconnect();

@@ -5,6 +5,7 @@ import deleteCoverImg from '../utils/delete-cover-img.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import getPreviewFromBody from '../utils/get-preview-from-body.js';
+import { moveCoverImg } from '../utils/move-cover-img.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -210,6 +211,10 @@ export const create = async (req, res) => {
     // publishedAt по умолчанию ставится текущая дата, но если изменено, то указанная дата
     // const { metaTitle, title, categoryId, publishedAt, image, body } = data;
 
+    const tempImagePath = data.image;
+    const permanentImagePath = tempImagePath.replace('temp/', '')
+    moveCoverImg(tempImagePath, permanentImagePath);
+
     let currentSlug = slugify(data.title);
 
     const cryptoActivityPostWithSameSlug =
@@ -234,7 +239,7 @@ export const create = async (req, res) => {
         published_at: data.publishedAt
           ? new Date(data.publishedAt)
           : new Date(),
-        image: data.image,
+        image: permanentImagePath,
         slug: currentSlug,
         body: data.body,
       },
@@ -275,6 +280,26 @@ export const update = async (req, res) => {
       currentSlug = `${currentSlug}-${Date.now()}`;
     }
 
+    const currentCryptoActivity = await prisma.cryptoActivity.findUnique({
+      where: {
+        id
+      },
+    });
+
+    let newImagePath = data.path;
+
+    if (currentCryptoActivity.image !== data.image) {
+      const tempImagePath = data.image;
+      const permanentImagePath = tempImagePath.replace('temp/', '');
+      newImagePath = permanentImagePath;
+      moveCoverImg(tempImagePath, permanentImagePath);
+
+      // удаляем текущую обложку
+      // const currentImagePath = path.join(__dirname, '..', currentNewsPost.image);
+      // console.log('imagePathimagePathimagePathimagePath', currentImagePath)
+      // deleteCoverImg(currentImagePath);
+    }
+
     await prisma.cryptoActivity.update({
       where: {
         id,
@@ -283,7 +308,7 @@ export const update = async (req, res) => {
       data: {
         meta_title: data.metaTitle || data.title,
         title: data.title,
-        image: data.image,
+        image: newImagePath,
         published_at: data.publishedAt,
         slug: currentSlug,
         body: data.body,
