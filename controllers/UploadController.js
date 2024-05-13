@@ -78,22 +78,22 @@ export const uploadImage = async (req, res) => {
           await image.writeAsync(outputImagePath);
         }
       }
-
-      // Создаем временное изображение с помощью Jimp
-      const image = await Jimp.read(tempImagePath);
-      await image.quality(50);
-
-      // Изменяем размер изображения по ширине с сохранением пропорций
-      await image.resize(desiredImageWidth, Jimp.AUTO);
-
-      // Сохраняем измененное изображение
-      await image.writeAsync(imagePath);
-
-      // Удаляем временное изображение
-      fs.unlinkSync(tempImagePath);
-
-      res.status(201).json({ imageUrl: imagePath });
     }
+
+    // Создаем временное изображение с помощью Jimp
+    const image = await Jimp.read(tempImagePath);
+    await image.quality(50);
+
+    // Изменяем размер изображения по ширине с сохранением пропорций
+    await image.resize(desiredImageWidth, Jimp.AUTO);
+
+    // Сохраняем измененное изображение
+    await image.writeAsync(imagePath);
+
+    // Удаляем временное изображение
+    fs.unlinkSync(tempImagePath);
+
+    res.status(201).json({ imageUrl: imagePath });
 
   } catch (error) {
     return res.status(500).json({
