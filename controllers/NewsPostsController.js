@@ -286,6 +286,7 @@ export const create = async (req, res) => {
       }
     });
 
+
     // Увеличение счетчика в соответствующей категории
     await prisma.newsCategory.update({
       where: {
