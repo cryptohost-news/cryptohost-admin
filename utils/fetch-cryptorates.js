@@ -15,7 +15,7 @@ const formatCurrencyRates = (data, outCurrency) => {
       matic: 'Polygon',
       doge: 'Dogecoin',
       sol: 'Solana',
-      ton: 'Toncoin',
+      toncoin: 'Toncoin',
       dot: 'Polkadot',
       link: 'Chainlink',
       ltc: 'Litecoin',
@@ -43,17 +43,22 @@ const formatCurrencyRates = (data, outCurrency) => {
     };
   });
 
+  // TON почему-то в api назван как TONCOIN, пришлось переименовать.
+  rates.find((rate) => rate.short_name === 'toncoin').short_name = 'ton';
+
   return rates;
 };
 
 export const getCurrencyRates = async (outCurrency = 'USD') => {
   const apiKey = process.env.CRYPTOCOMPARE_API_KEY;
-  const cryptoSymbols = 'ADA,BNB,BTC,DOGE,ETH,MATIC,SOL,TON,USDC,USDT,XPR';
+  const cryptoSymbols = 'ADA,BNB,BTC,DOGE,ETH,MATIC,SOL,TONCOIN,USDC,USDT,XPR';
 
   try {
     const { data } = await axios.get(
       `https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${cryptoSymbols}&tsyms=${outCurrency}&api_key=${apiKey}`
     );
+
+    console.log('CRYPTO data', data)
 
     return formatCurrencyRates(data, outCurrency);
   } catch (error) {
@@ -61,3 +66,5 @@ export const getCurrencyRates = async (outCurrency = 'USD') => {
     throw new Error('Error fetching crypto prices');
   }
 };
+
+getCurrencyRates();
